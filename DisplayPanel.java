@@ -24,6 +24,8 @@ public class DisplayPanel extends JPanel implements MouseMotionListener, MouseLi
     public void paint(Graphics g) {
         super.paint(g);
 
+        ArrayList<MyTriangle> trianglesToDraw = new ArrayList<>();
+
         // Rotation Matrices
         float[][] rotX, rotZ;
         rotX = new float[4][4];
@@ -118,9 +120,10 @@ public class DisplayPanel extends JPanel implements MouseMotionListener, MouseLi
                             lightDirection.x, lightDirection.y, lightDirection.z);
                     // System.out.println(lightDotProduct);
                     float lightModifier = 50.0f;
-                    float redElement = Color.green.getRed() - lightDotProduct * lightModifier;
-                    float greenElement = Color.green.getGreen() - lightDotProduct * lightModifier;
-                    float blueElement = Color.green.getBlue() - lightDotProduct * lightModifier;
+                    projectedTriangle.triangleColor = Color.green;
+                    float redElement = projectedTriangle.triangleColor.getRed() - lightDotProduct * lightModifier;
+                    float greenElement = projectedTriangle.triangleColor.getGreen() - lightDotProduct * lightModifier;
+                    float blueElement = projectedTriangle.triangleColor.getBlue() - lightDotProduct * lightModifier;
                     if (redElement < 0) {
                         redElement = 1;
                     }
@@ -139,8 +142,9 @@ public class DisplayPanel extends JPanel implements MouseMotionListener, MouseLi
                     if (blueElement > 254) {
                         blueElement = 254;
                     }
-                    System.out.println(greenElement);
+
                     Color newGreen = new Color((int) redElement, (int) greenElement, (int) blueElement);
+                    projectedTriangle.triangleColor = newGreen;
 
                     // project the triangle
                     projectedTriangle.vectors[0] = MyHelper.multiplyMatrixVector(translatedTriangle.vectors[0],
@@ -171,9 +175,25 @@ public class DisplayPanel extends JPanel implements MouseMotionListener, MouseLi
                     projectedTriangle.vectors[2].x *= 0.5f * (float) screenSize.width;
                     projectedTriangle.vectors[2].y *= 0.5f * (float) screenSize.height;
 
-                    MyHelper.fillMyTriangle(g, projectedTriangle, newGreen);
+                    // MyHelper.fillMyTriangle(g, projectedTriangle, newGreen);
+                    trianglesToDraw.add(projectedTriangle);
+
                 }
             }
+        } // end of collecting triangles
+
+        trianglesToDraw.sort(new Comparator<MyTriangle>(){
+            @Override
+            public int compare(MyTriangle triangle1, MyTriangle triangle2) {
+                float firstZAverage = (triangle1.vectors[0].z + triangle1.vectors[1].z + triangle1.vectors[2].z) / 3.0f;
+                float secondZAverage = (triangle2.vectors[0].z + triangle2.vectors[1].z + triangle2.vectors[2].z) / 3.0f;
+                if(secondZAverage > firstZAverage){ return 1; }
+                if(secondZAverage < firstZAverage){ return -1; }
+                return 0;
+            }
+        });
+        for(int i = 0; i < trianglesToDraw.size(); i++){
+            MyHelper.fillMyTriangle(g, trianglesToDraw.get(i), trianglesToDraw.get(i).triangleColor);
         }
 
     }
