@@ -6,6 +6,10 @@ import java.awt.event.MouseMotionListener;
 import java.util.*;
 
 public class DisplayPanel extends JPanel implements MouseMotionListener, MouseListener {
+    /**
+     *
+     */
+    private static final long serialVersionUID = 1L;
     ArrayList<MyMesh> meshes = new ArrayList<>();
     float[][] projMat = new float[4][4];
     MyVector3D CameraVector = new MyVector3D(0.0f, 0.0f, 0.0f);
