@@ -1,5 +1,8 @@
+import java.awt.*;
+
 public class MyTriangle {
     MyVector3D[] vectors = new MyVector3D[3];
+    Color triangleColor = new Color(0, 0, 0);
 
     public MyTriangle(MyVector3D first, MyVector3D second, MyVector3D third){
         vectors[0] = first;
