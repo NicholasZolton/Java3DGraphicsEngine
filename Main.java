@@ -1,8 +1,10 @@
+import java.io.FileNotFoundException;
+
 import javax.swing.*;
 
 public class Main {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws FileNotFoundException {
 	// write your code here
 
         JFrame mainFrame = new JFrame();

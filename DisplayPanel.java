@@ -15,172 +15,124 @@ public class DisplayPanel extends JPanel implements MouseMotionListener, MouseLi
     float[][] projMat = new float[4][4];
     MyVector3D CameraVector = new MyVector3D(0.0f, 0.0f, 0.0f);
 
-    public DisplayPanel() {
+    public DisplayPanel() throws FileNotFoundException {
         setBackground(Color.gray);
         makeProjectionMatrix();
         meshInitializer();
     }
 
-    public void paint(Graphics g) {
+    public void paint(Graphics g){
         super.paint(g);
 
-        ArrayList<MyTriangle> trianglesToDraw = new ArrayList<>();
-
-        // Rotation Matrices
-        float[][] rotX, rotZ;
+        //Rotation Matrices
+        float[][] rotX, rotZ, matworld, rotTranslate;
         rotX = new float[4][4];
         rotZ = new float[4][4];
         double fTheta = 1.0f * UniversalTimer.timeElapsed;
 
         // Z Rotation Matrix
-        rotZ[0][0] = (float) Math.cos(fTheta);
-        rotZ[0][1] = (float) Math.sin(fTheta);
-        rotZ[1][0] = (float) -Math.sin(fTheta);
-        rotZ[1][1] = (float) Math.cos(fTheta);
-        rotZ[2][2] = 1;
-        rotZ[3][3] = 1;
+        rotZ = MyHelper.makeZRotationMatrix((float)fTheta);
 
         // X Rotation Matrix
-        rotX[0][0] = 1;
-        rotX[1][1] = (float) Math.cos(fTheta * 0.5f);
-        rotX[1][2] = (float) Math.sin(fTheta * 0.5f);
-        rotX[2][1] = (float) -Math.sin(fTheta * 0.5f);
-        rotX[2][2] = (float) Math.cos(fTheta * 0.5f);
-        rotX[3][3] = 1;
+        rotX = MyHelper.makeXRotationMatrix((float)fTheta);
 
-        for (MyMesh mesh : meshes) {
-            for (MyTriangle triangle : mesh.triangles) {
+        // make translation matrix
+        rotTranslate = MyHelper.makeTranslationMatrix(0f, 0f, 50.0f);
+
+        // make world matrix
+        matworld = MyHelper.multiplyMatrix(rotZ, rotX);
+        matworld = MyHelper.multiplyMatrix(matworld, rotTranslate);
+
+        ArrayList<MyTriangle> trianglesToDraw = new ArrayList<>();
+
+        for(MyMesh mesh: meshes){
+            for(MyTriangle triangle: mesh.triangles){
                 MyTriangle translatedTriangle = new MyTriangle();
                 MyTriangle projectedTriangle = new MyTriangle();
-                MyTriangle ZRotatedTriangle = new MyTriangle();
-                MyTriangle ZXRotatedTriangle = new MyTriangle();
-
-                // translate the triangle
-                ZRotatedTriangle.vectors[0] = MyHelper.multiplyMatrixVector(triangle.vectors[0], rotZ);
-                ZRotatedTriangle.vectors[1] = MyHelper.multiplyMatrixVector(triangle.vectors[1], rotZ);
-                ZRotatedTriangle.vectors[2] = MyHelper.multiplyMatrixVector(triangle.vectors[2], rotZ);
-
-                ZXRotatedTriangle.vectors[0] = MyHelper.multiplyMatrixVector(ZRotatedTriangle.vectors[0], rotX);
-                ZXRotatedTriangle.vectors[1] = MyHelper.multiplyMatrixVector(ZRotatedTriangle.vectors[1], rotX);
-                ZXRotatedTriangle.vectors[2] = MyHelper.multiplyMatrixVector(ZRotatedTriangle.vectors[2], rotX);
-
-                translatedTriangle = new MyTriangle(ZXRotatedTriangle);
-                translatedTriangle.vectors[0].z = ZXRotatedTriangle.vectors[0].z + 50.0f;
-                translatedTriangle.vectors[1].z = ZXRotatedTriangle.vectors[1].z + 50.0f;
-                translatedTriangle.vectors[2].z = ZXRotatedTriangle.vectors[2].z + 50.0f;
-
+                
+                translatedTriangle.vectors[0] = MyHelper.multiplyMatrixVector(triangle.vectors[0], matworld);
+                translatedTriangle.vectors[1] = MyHelper.multiplyMatrixVector(triangle.vectors[1], matworld);
+                translatedTriangle.vectors[2] = MyHelper.multiplyMatrixVector(triangle.vectors[2], matworld);
+                
                 // deal with the normals
                 MyVector3D normalLine, firstLine, secondLine;
                 normalLine = new MyVector3D(1.0f, 1.0f, 1.0f);
                 firstLine = new MyVector3D(1.0f, 1.0f, 1.0f);
                 secondLine = new MyVector3D(1.0f, 1.0f, 1.0f);
 
-                firstLine.x = translatedTriangle.vectors[1].x - translatedTriangle.vectors[0].x;
-                firstLine.y = translatedTriangle.vectors[1].y - translatedTriangle.vectors[0].y;
-                firstLine.z = translatedTriangle.vectors[1].z - translatedTriangle.vectors[0].z;
+                firstLine = MyHelper.subtractVectors(translatedTriangle.vectors[1], translatedTriangle.vectors[0]);
+                secondLine = MyHelper.subtractVectors(translatedTriangle.vectors[2], translatedTriangle.vectors[0]);
 
-                secondLine.x = translatedTriangle.vectors[2].x - translatedTriangle.vectors[0].x;
-                secondLine.y = translatedTriangle.vectors[2].y - translatedTriangle.vectors[0].y;
-                secondLine.z = translatedTriangle.vectors[2].z - translatedTriangle.vectors[0].z;
+                normalLine = MyHelper.vectorCrossProduct(firstLine, secondLine);
 
-                normalLine.x = firstLine.y * secondLine.z - firstLine.z * secondLine.y;
-                normalLine.y = firstLine.z * secondLine.x - firstLine.x * secondLine.z;
-                normalLine.z = firstLine.x * secondLine.y - firstLine.y * secondLine.x;
+                normalLine = MyHelper.normalizeVector(normalLine);
 
-                float length = (float) Math
-                        .sqrt(normalLine.x * normalLine.x + normalLine.y * normalLine.y + normalLine.z * normalLine.z);
-                normalLine.x /= length;
-                normalLine.y /= length;
-                normalLine.z /= length;
+                MyVector3D vCamRay = MyHelper.subtractVectors(translatedTriangle.vectors[0], CameraVector);
 
-                // System.out.println(normalLine.z + " " + normalLine.y + " " + normalLine.x);
+                // float dotProduct = MyHelper.dotProduct(normalLine.x, normalLine.y, normalLine.z,
+                //         (translatedTriangle.vectors[0].x - CameraVector.x),
+                //         (translatedTriangle.vectors[0].y - CameraVector.y),
+                //         (translatedTriangle.vectors[0].z - CameraVector.z));
 
-                // float dotProduct = (normalLine.x * (translatedTriangle.vectors[0].x -
-                // CameraVector.x) + normalLine.y
-                // * (translatedTriangle.vectors[0].y - CameraVector.y) + normalLine.z
-                // * (translatedTriangle.vectors[0].z - CameraVector.z));
+                float dotProduct = MyHelper.vectorDotProduct(normalLine, vCamRay);
 
-                float dotProduct = MyHelper.dotProduct(normalLine.x, normalLine.y, normalLine.z,
-                        (translatedTriangle.vectors[0].x - CameraVector.x),
-                        (translatedTriangle.vectors[0].y - CameraVector.y),
-                        (translatedTriangle.vectors[0].z - CameraVector.z));
+//                System.out.println(dotProduct);
 
-                // System.out.println(dotProduct);
-
-                if (dotProduct < 0.0f) {
+                if(dotProduct < 0.0f){
                     // Illumination
                     MyVector3D lightDirection = new MyVector3D(0.0f, 0.0f, -1.0f);
-                    float lightLength = (float) Math.sqrt(lightDirection.x * lightDirection.x
-                            + lightDirection.y * lightDirection.y + lightDirection.z * lightDirection.z);
+                    float lightLength = (float)Math.sqrt(lightDirection.x*lightDirection.x + lightDirection.y*lightDirection.y + lightDirection.z*lightDirection.z);
                     lightDirection.x /= lightLength;
                     lightDirection.y /= lightLength;
                     lightDirection.z /= lightLength;
 
-                    float lightDotProduct = MyHelper.dotProduct(normalLine.x, normalLine.y, normalLine.z,
-                            lightDirection.x, lightDirection.y, lightDirection.z);
-                    // System.out.println(lightDotProduct);
+                    float lightDotProduct = MyHelper.vectorDotProduct(normalLine, lightDirection);
+//                    System.out.println(lightDotProduct);
                     float lightModifier = 50.0f;
-                    projectedTriangle.triangleColor = Color.green;
-                    float redElement = projectedTriangle.triangleColor.getRed() - lightDotProduct * lightModifier;
-                    float greenElement = projectedTriangle.triangleColor.getGreen() - lightDotProduct * lightModifier;
-                    float blueElement = projectedTriangle.triangleColor.getBlue() - lightDotProduct * lightModifier;
-                    if (redElement < 0) {
-                        redElement = 1;
-                    }
-                    if (greenElement < 0) {
-                        greenElement = 1;
-                    }
-                    if (blueElement < 0) {
-                        blueElement = 1;
-                    }
-                    if (redElement > 254) {
-                        redElement = 254;
-                    }
-                    if (greenElement > 254) {
-                        greenElement = 254;
-                    }
-                    if (blueElement > 254) {
-                        blueElement = 254;
-                    }
-
-                    Color newGreen = new Color((int) redElement, (int) greenElement, (int) blueElement);
+                    float redElement = Color.green.getRed() - lightDotProduct*lightModifier;
+                    float greenElement = Color.green.getGreen() - lightDotProduct*lightModifier;
+                    float blueElement = Color.green.getBlue() - lightDotProduct*lightModifier;
+                    if(redElement < 0) { redElement = 1; }
+                    if(greenElement < 0) { greenElement = 1; }
+                    if(blueElement < 0) { blueElement = 1; }
+                    if(redElement > 254) { redElement = 254; }
+                    if(greenElement > 254) { greenElement = 254; }
+                    if(blueElement > 254) { blueElement = 254; }
+                    System.out.println(greenElement);
+                    Color newGreen = new Color((int)redElement, (int)greenElement, (int)blueElement);
                     projectedTriangle.triangleColor = newGreen;
 
+
                     // project the triangle
-                    projectedTriangle.vectors[0] = MyHelper.multiplyMatrixVector(translatedTriangle.vectors[0],
-                            projMat);
-                    projectedTriangle.vectors[1] = MyHelper.multiplyMatrixVector(translatedTriangle.vectors[1],
-                            projMat);
-                    projectedTriangle.vectors[2] = MyHelper.multiplyMatrixVector(translatedTriangle.vectors[2],
-                            projMat);
+                    projectedTriangle.vectors[0] = MyHelper.multiplyMatrixVector(translatedTriangle.vectors[0], projMat);
+                    projectedTriangle.vectors[1] = MyHelper.multiplyMatrixVector(translatedTriangle.vectors[1], projMat);
+                    projectedTriangle.vectors[2] = MyHelper.multiplyMatrixVector(translatedTriangle.vectors[2], projMat);
+
+                    // normalize into cartesian space
+                    projectedTriangle.vectors[0] = MyHelper.divideVector(projectedTriangle.vectors[0], projectedTriangle.vectors[0].w);
+                    projectedTriangle.vectors[1] = MyHelper.divideVector(projectedTriangle.vectors[1], projectedTriangle.vectors[1].w);
+                    projectedTriangle.vectors[2] = MyHelper.divideVector(projectedTriangle.vectors[2], projectedTriangle.vectors[2].w);
 
                     // scale the triangle
                     Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-                    projectedTriangle.vectors[0].x += 1.0f;
-                    projectedTriangle.vectors[0].y += 1.0f;
-                    // projectedTriangle.vectors[0].z += 1.0f;
+                    MyVector3D vOffsetView = new MyVector3D(1.0f, 1.0f, 0.0f);
 
-                    projectedTriangle.vectors[1].x += 1.0f;
-                    projectedTriangle.vectors[1].y += 1.0f;
-                    // projectedTriangle.vectors[1].z += 1.0f;
+                    projectedTriangle.vectors[0] = MyHelper.addVectors(projectedTriangle.vectors[0], vOffsetView);
+                    projectedTriangle.vectors[1] = MyHelper.addVectors(projectedTriangle.vectors[1], vOffsetView);
+                    projectedTriangle.vectors[2] = MyHelper.addVectors(projectedTriangle.vectors[2], vOffsetView);
 
-                    projectedTriangle.vectors[2].x += 1.0f;
-                    projectedTriangle.vectors[2].y += 1.0f;
-                    // projectedTriangle.vectors[2].z += 1.0f;
+                    projectedTriangle.vectors[0].x *= 0.5f * (float)screenSize.width;
+                    projectedTriangle.vectors[0].y *= 0.5f * (float)screenSize.height;
+                    projectedTriangle.vectors[1].x *= 0.5f * (float)screenSize.width;
+                    projectedTriangle.vectors[1].y *= 0.5f * (float)screenSize.height;
+                    projectedTriangle.vectors[2].x *= 0.5f * (float)screenSize.width;
+                    projectedTriangle.vectors[2].y *= 0.5f * (float)screenSize.height;
 
-                    projectedTriangle.vectors[0].x *= 0.5f * (float) screenSize.width;
-                    projectedTriangle.vectors[0].y *= 0.5f * (float) screenSize.height;
-                    projectedTriangle.vectors[1].x *= 0.5f * (float) screenSize.width;
-                    projectedTriangle.vectors[1].y *= 0.5f * (float) screenSize.height;
-                    projectedTriangle.vectors[2].x *= 0.5f * (float) screenSize.width;
-                    projectedTriangle.vectors[2].y *= 0.5f * (float) screenSize.height;
-
-                    // MyHelper.fillMyTriangle(g, projectedTriangle, newGreen);
+//                    MyHelper.fillMyTriangle(g, projectedTriangle, newGreen);
                     trianglesToDraw.add(projectedTriangle);
-
                 }
             }
-        } // end of collecting triangles
+        }
 
         trianglesToDraw.sort(new Comparator<MyTriangle>(){
             @Override
@@ -198,57 +150,38 @@ public class DisplayPanel extends JPanel implements MouseMotionListener, MouseLi
 
     }
 
-    public void meshInitializer() {
+    public void meshInitializer() throws FileNotFoundException {
 
-        // // Put your meshes here
+        // Put your meshes here
         MyMesh firstCube = new MyMesh();
-        // // South Face
-        // firstCube.addTriangle(new MyTriangle(new MyVector3D(0.0f, 0.0f, 0.0f), new
-        // MyVector3D(0.0f, 1.0f, 0.0f), new MyVector3D(1.0f, 1.0f, 0.0f)));
-        // firstCube.addTriangle(new MyTriangle(new MyVector3D(0.0f, 0.0f, 0.0f), new
-        // MyVector3D(1.0f, 1.0f, 0.0f), new MyVector3D(1.0f, 0.0f, 0.0f)));
+//        // South Face
+//        firstCube.addTriangle(new MyTriangle(new MyVector3D(0.0f, 0.0f, 0.0f), new MyVector3D(0.0f, 1.0f, 0.0f), new MyVector3D(1.0f, 1.0f, 0.0f)));
+//        firstCube.addTriangle(new MyTriangle(new MyVector3D(0.0f, 0.0f, 0.0f), new MyVector3D(1.0f, 1.0f, 0.0f), new MyVector3D(1.0f, 0.0f, 0.0f)));
+//
+//        // East Face
+//        firstCube.addTriangle(new MyTriangle(new MyVector3D(1.0f, 0.0f, 0.0f), new MyVector3D(1.0f, 1.0f, 0.0f), new MyVector3D(1.0f, 1.0f, 1.0f)));
+//        firstCube.addTriangle(new MyTriangle(new MyVector3D(1.0f, 0.0f, 0.0f), new MyVector3D(1.0f, 1.0f, 1.0f), new MyVector3D(1.0f, 0.0f, 1.0f)));
+//
+//        // North Face
+//        firstCube.addTriangle(new MyTriangle(new MyVector3D(1.0f, 0.0f, 1.0f), new MyVector3D(1.0f, 1.0f, 1.0f), new MyVector3D(0.0f, 1.0f, 1.0f)));
+//        firstCube.addTriangle(new MyTriangle(new MyVector3D(1.0f, 0.0f, 1.0f), new MyVector3D(0.0f, 1.0f, 1.0f), new MyVector3D(0.0f, 0.0f, 1.0f)));
+//
+//        // West Face
+//        firstCube.addTriangle(new MyTriangle(new MyVector3D(0.0f, 0.0f, 1.0f), new MyVector3D(0.0f, 1.0f, 1.0f), new MyVector3D(0.0f, 1.0f, 0.0f)));
+//        firstCube.addTriangle(new MyTriangle(new MyVector3D(0.0f, 0.0f, 1.0f), new MyVector3D(0.0f, 1.0f, 0.0f), new MyVector3D(0.0f, 0.0f, 0.0f)));
+//
+//        //Top Face
+//        firstCube.addTriangle(new MyTriangle(new MyVector3D(0.0f, 1.0f, 0.0f), new MyVector3D(0.0f, 1.0f, 1.0f), new MyVector3D(1.0f, 1.0f, 1.0f)));
+//        firstCube.addTriangle(new MyTriangle(new MyVector3D(0.0f, 1.0f, 0.0f), new MyVector3D(1.0f, 1.0f, 1.0f), new MyVector3D(1.0f, 1.0f, 0.0f)));
+//
+//        //Bottom Face
+//        firstCube.addTriangle(new MyTriangle(new MyVector3D(1.0f, 0.0f, 1.0f), new MyVector3D(0.0f, 0.0f, 1.0f), new MyVector3D(0.0f, 0.0f, 0.0f)));
+//        firstCube.addTriangle(new MyTriangle(new MyVector3D(1.0f, 0.0f, 1.0f), new MyVector3D(0.0f, 0.0f, 0.0f), new MyVector3D(1.0f, 0.0f, 0.0f)));
 
-        // // East Face
-        // firstCube.addTriangle(new MyTriangle(new MyVector3D(1.0f, 0.0f, 0.0f), new
-        // MyVector3D(1.0f, 1.0f, 0.0f), new MyVector3D(1.0f, 1.0f, 1.0f)));
-        // firstCube.addTriangle(new MyTriangle(new MyVector3D(1.0f, 0.0f, 0.0f), new
-        // MyVector3D(1.0f, 1.0f, 1.0f), new MyVector3D(1.0f, 0.0f, 1.0f)));
-
-        // // North Face
-        // firstCube.addTriangle(new MyTriangle(new MyVector3D(1.0f, 0.0f, 1.0f), new
-        // MyVector3D(1.0f, 1.0f, 1.0f), new MyVector3D(0.0f, 1.0f, 1.0f)));
-        // firstCube.addTriangle(new MyTriangle(new MyVector3D(1.0f, 0.0f, 1.0f), new
-        // MyVector3D(0.0f, 1.0f, 1.0f), new MyVector3D(0.0f, 0.0f, 1.0f)));
-
-        // // West Face
-        // firstCube.addTriangle(new MyTriangle(new MyVector3D(0.0f, 0.0f, 1.0f), new
-        // MyVector3D(0.0f, 1.0f, 1.0f), new MyVector3D(0.0f, 1.0f, 0.0f)));
-        // firstCube.addTriangle(new MyTriangle(new MyVector3D(0.0f, 0.0f, 1.0f), new
-        // MyVector3D(0.0f, 1.0f, 0.0f), new MyVector3D(0.0f, 0.0f, 0.0f)));
-
-        // //Top Face
-        // firstCube.addTriangle(new MyTriangle(new MyVector3D(0.0f, 1.0f, 0.0f), new
-        // MyVector3D(0.0f, 1.0f, 1.0f), new MyVector3D(1.0f, 1.0f, 1.0f)));
-        // firstCube.addTriangle(new MyTriangle(new MyVector3D(0.0f, 1.0f, 0.0f), new
-        // MyVector3D(1.0f, 1.0f, 1.0f), new MyVector3D(1.0f, 1.0f, 0.0f)));
-
-        // //Bottom Face
-        // firstCube.addTriangle(new MyTriangle(new MyVector3D(1.0f, 0.0f, 1.0f), new
-        // MyVector3D(0.0f, 0.0f, 1.0f), new MyVector3D(0.0f, 0.0f, 0.0f)));
-        // firstCube.addTriangle(new MyTriangle(new MyVector3D(1.0f, 0.0f, 1.0f), new
-        // MyVector3D(0.0f, 0.0f, 0.0f), new MyVector3D(1.0f, 0.0f, 0.0f)));
-
-        try {
-            firstCube.loadMyObject("myStonehengeTriangles.obj");
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        // end of where you put meshes
+        firstCube.loadMyObject("myStonehengeTriangles.obj");
 
         meshes.add(firstCube);
-        
-
-        
+        // end of where you put meshes
     }
 
     public void makeProjectionMatrix(){
