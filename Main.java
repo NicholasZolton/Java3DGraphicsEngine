@@ -9,7 +9,7 @@ public class Main {
 
         JFrame mainFrame = new JFrame();
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        mainFrame.setUndecorated(true);
+        mainFrame.setUndecorated(false);
         mainFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         DisplayPanel dp = new DisplayPanel();
         mainFrame.setContentPane(dp);

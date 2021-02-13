@@ -117,6 +117,39 @@ public class MyHelper {
         return matrix;
     }
 
+    static public float[][] makePointAtMatrix(MyVector3D pos, MyVector3D target, MyVector3D up){
+        
+        MyVector3D newForward = subtractVectors(target, pos);
+        newForward = normalizeVector(newForward);
+
+        MyVector3D a = multiplyVector(newForward, vectorDotProduct(up, newForward));
+        MyVector3D newUp = subtractVectors(up, a);
+        newUp = normalizeVector(newUp);
+
+        MyVector3D newRight = vectorCrossProduct(newUp, newForward);
+
+        // point at matrix
+        float[][] matrix = new float[4][4];
+        matrix[0][0] = newRight.x;
+        matrix[1][0] = newUp.x;
+        matrix[2][0] = newForward.x;
+        matrix[3][0] = pos.x;
+        matrix[0][1] = newRight.y;
+        matrix[1][1] = newUp.y;
+        matrix[2][1] = newForward.y;
+        matrix[3][1] = pos.y;
+        matrix[0][2] = newRight.z;
+        matrix[1][2] = newUp.z;
+        matrix[2][2] = newForward.z;
+        matrix[3][2] = pos.z;
+        matrix[0][3] = 0.0f;
+        matrix[1][3] = 0.0f;
+        matrix[2][3] = 0.0f;
+        matrix[3][3] = 1.0f;
+
+        return matrix;
+    }
+
     static public float[][] multiplyMatrix(float[][] m1, float[][] m2){
         float[][] matrix = new float[4][4];
         for(int i = 0; i <  4; i++){
@@ -127,7 +160,7 @@ public class MyHelper {
         return matrix;
     }
 
-    static public float[][] invertMatrix(float[][] m){
+    static public float[][] invertMatrix(float[][] m){ // this is only for the point at matrix and does not work for all matrices!!
         float[][] matrix = new float[4][4];
         matrix[0][0] = m[0][0]; matrix[0][1] = m[1][0]; matrix[0][2] = m[2][0]; matrix[0][3] = 0.0f;
 		matrix[1][0] = m[0][1]; matrix[1][1] = m[1][1]; matrix[1][2] = m[2][1]; matrix[1][3] = 0.0f;
