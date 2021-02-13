@@ -34,7 +34,7 @@ public class DisplayPanel extends JPanel implements MouseMotionListener, MouseLi
         rotZ = MyHelper.makeZRotationMatrix((float)fTheta);
 
         // X Rotation Matrix
-        rotX = MyHelper.makeXRotationMatrix((float)fTheta);
+        rotX = MyHelper.makeXRotationMatrix((float)fTheta * 0.5f);
 
         // make translation matrix
         rotTranslate = MyHelper.makeTranslationMatrix(0f, 0f, 10.0f);
@@ -98,7 +98,6 @@ public class DisplayPanel extends JPanel implements MouseMotionListener, MouseLi
                     if(redElement > 254) { redElement = 254; }
                     if(greenElement > 254) { greenElement = 254; }
                     if(blueElement > 254) { blueElement = 254; }
-                    System.out.println(greenElement);
                     Color newGreen = new Color((int)redElement, (int)greenElement, (int)blueElement);
                     projectedTriangle.triangleColor = newGreen;
 
