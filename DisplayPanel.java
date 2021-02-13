@@ -37,7 +37,7 @@ public class DisplayPanel extends JPanel implements MouseMotionListener, MouseLi
         rotX = MyHelper.makeXRotationMatrix((float)fTheta);
 
         // make translation matrix
-        rotTranslate = MyHelper.makeTranslationMatrix(0f, 0f, 50.0f);
+        rotTranslate = MyHelper.makeTranslationMatrix(0f, 0f, 10.0f);
 
         // make world matrix
         matworld = MyHelper.multiplyMatrix(rotZ, rotX);
@@ -101,7 +101,6 @@ public class DisplayPanel extends JPanel implements MouseMotionListener, MouseLi
                     System.out.println(greenElement);
                     Color newGreen = new Color((int)redElement, (int)greenElement, (int)blueElement);
                     projectedTriangle.triangleColor = newGreen;
-
 
                     // project the triangle
                     projectedTriangle.vectors[0] = MyHelper.multiplyMatrixVector(translatedTriangle.vectors[0], projMat);
@@ -178,7 +177,7 @@ public class DisplayPanel extends JPanel implements MouseMotionListener, MouseLi
 //        firstCube.addTriangle(new MyTriangle(new MyVector3D(1.0f, 0.0f, 1.0f), new MyVector3D(0.0f, 0.0f, 1.0f), new MyVector3D(0.0f, 0.0f, 0.0f)));
 //        firstCube.addTriangle(new MyTriangle(new MyVector3D(1.0f, 0.0f, 1.0f), new MyVector3D(0.0f, 0.0f, 0.0f), new MyVector3D(1.0f, 0.0f, 0.0f)));
 
-        firstCube.loadMyObject("myStonehengeTriangles.obj");
+        firstCube.loadMyObject("utahteapot.obj");
 
         meshes.add(firstCube);
         // end of where you put meshes
