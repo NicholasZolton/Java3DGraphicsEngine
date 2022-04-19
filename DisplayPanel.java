@@ -67,8 +67,8 @@ public class DisplayPanel extends JPanel implements MouseMotionListener, MouseLi
         float[][] rotX, rotZ, matworld, rotTranslate;
         rotX = new float[4][4];
         rotZ = new float[4][4];
-        // double fTheta = 1.0f * UniversalTimer.timeElapsed;
-        double fTheta = 1.0f;
+        double fTheta = 1.0f * UniversalTimer.timeElapsed;
+        // double fTheta = 1.0f;
 
         // Z Rotation Matrix
         rotZ = MyHelper.makeZRotationMatrix((float) fTheta);
